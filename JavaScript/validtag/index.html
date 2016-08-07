@@ -1,0 +1,24 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ValidTag</title>
+    <script src="validtag.js"></script>
+    <script>
+        var validTag = new ValidTag();
+        console.log(validTag.check('<html><body lang="ja"></body></html>') === true);
+        console.log(validTag.check('<html><body>test text</body></html>') === true);
+        console.log(validTag.check('<html><body></html></body>') === false);
+        console.log(validTag.check('<html><body><a name="anchor"></body></html>') === true);
+        console.log(validTag.check('<html><body><a href="index.html">hoge</a></body></html>') === true);
+        console.log(validTag.check('<html><head><body></body></html>') === false);
+        console.log(validTag.check('<html><body></body></head></html>') === false);
+        console.log(validTag.check('<html><body><a name="anchor1"><a name="anchor2"></body></html>') === true);
+        console.log(validTag.check('<html><body><div>test<span>test</span></div></body></html>') === true);
+        console.log(validTag.check('<html><body><ul>test<li>test<li>test</ul></body></html>') === true);
+        console.log(validTag.check('<html><body><div>test<span>test</div>test</span></body></html>') === false);
+    </script>
+</head>
+<body>
+
+</body>
+</html>

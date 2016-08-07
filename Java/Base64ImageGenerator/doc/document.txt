@@ -1,0 +1,14 @@
+ファイルの説明
+・src/Base64.java
+　バイト配列をBase64形式の文字列に変換するクラス
+　掲載URL
+　http://stackoverflow.com/questions/469695/decode-base64-data-in-java
+
+・src/Base64ImageGenerator.java
+　メインクラス
+
+工夫したポイント
+・保守性を考慮し、規定値を定数化した
+・保守性を考慮し、処理単位(画像の取得、Base64形式への変換、imgタグの生成、ファイル出力)ごとにメソッド化した
+・実行形態を考慮し、Base64変換クラスを持つApache Commons Codecは使用しないようにした
+・処理時間を考慮し、特定の拡張子以外のファイルは処理対象から除外するようにした

@@ -1,0 +1,431 @@
+ISGCJTHFPYUR
+JC
+
+＜アルゴリズムやデータ構造＞
+(1)与えられた各データファイルを読み込み、好みデータと制約データを持つ2つのオブジェクトを生成する。
+   好みデータとは、ある食べ物をキー、その食べ物の次に好きな食べ物の集合を値とする連想配列である。
+   制約データとは、ある食べ物をキー、その食べ物よりも好きな食べ物の集合を値とする連想配列である。
+
+(2)比較元となる一方のオブジェクトに対し、好みの順番データの集合を生成する。
+
+   具体的な手順は以下の通りである。
+   a.好みの順番データの空集合を生成する。
+   b.各食べ物の内、制約が存在しない(それよりも好きな食べ物がない)食べ物を取得し、
+     その食べ物の数の分だけ好みの順番データを生成して集合に追加する。
+   c.好みの順番データの各要素を参照し、順番データに追加可能な食べ物の集合を取得する。
+     追加可能な食べ物とは、制約条件(その食べ物よりも好きな食べ物が順番データに既に追加されている)
+     を満たしている食べ物のことである。
+   d.追加可能な食べ物の1つ目を、好みの順番データに追加する。
+   e.追加可能な食べ物が複数存在する場合は、現在参照している好みの順番データのコピーを(食べ物の数-1)個
+     だけ生成し、追加可能な食べ物の2つ目以降の要素を1つずつ異なるコピーに追加した上で、
+     好みの順番データの集合にコピーを追加する。
+   f.cからeの処理を、食べ物を1つも追加できなくなるまで繰り返す。
+
+(3)好みの順番データの集合と、比較対象となるもう一方のオブジェクトの好みデータを比較し、
+   好みデータから見て妥協する順番が最も少ない、好みの順番データを求める。
+
+   妥協する順番を判定する手順は以下の通りである。
+   a.好みの順番データの各要素を参照する。
+   b.好みデータの各要素を参照する。
+   c.好みデータのキーである食べ物が、現在参照している好みの順番データの中に設定されている位置を求める。
+   d.好みデータの値である食べ物の集合の各要素を参照し、好みの順番データの中に設定されている位置を求める。
+     その中でキーの食べ物の位置より前に設定されている要素が存在する場合、
+     キーの食べ物とその要素の食べ物の組み合わせを、妥協する順番とみなす。
+
+(4)妥協する順番が最も少ない好みの順番データと、妥協する順番をコンソールに出力する。
+
+
+＜そのアルゴリズムやデータ構造を選択した理由＞
+・好みデータと制約データのデータ構造について
+  ある食べ物とその次に好きな食べ物、ある食べ物とそれよりも好きな食べ物はいずれも1対多の関係であり、
+  その関係を簡潔に実装できるデータ構造として連想配列(Map<String, List<String>>)を採用した。
+
+・制約データの使用について
+  データファイルは、1文字目が好きな食べ物、2文字目がその食べ物の次に好きな食べ物を示しており、
+  当プログラムでの好みデータがそれに対応するが、その関係を逆にした制約データを更に生成し、
+  そのデータを使用して好みの順番データを生成している。
+  それは、より少ない計算量で判定を行うためである。
+  ある食べ物を好みの順番に追加しようとする時、その食べ物よりも好きな食べ物が既に追加されていることを
+  確認するが、前者のデータを使用して確認を行うためには、連想配列であるデータの全要素の値を参照し、
+  値の集合の中に追加しようとしている食べ物が含まれていないか、
+  含まれている場合はその値のキーである食べ物が既に順番データに追加されていることを確認する必要がある。
+  それに対し、後者のデータを使用すれば、追加しようとしている食べ物をキーとする要素をデータから取得し、
+  その値である食べ物の集合の各要素が既に順番データに追加されていることを確認するだけで済む。
+  制約データを生成するためには若干の計算量とメモリを必要とするが、
+  好みの順番データの生成処理は当プログラムの中心であり多くの計算量を伴うため、
+  それらのコストに見合っているはずである。
+
+
+＜そのほか特記すべきと思う内容（速度やメンテナンス性、拡張性に関する情報など）＞
+　保守性を考慮し、好みデータや制約データ、好みの順番のデータを扱うデータクラス(FavoriteOrder)を実装し、
+  メインクラス(FavoriteOrderComparator)では最善の好みの順番データを求める処理のみを行っている。
+
+
+＜使用したプログラミング言語名＞
+　Java
+
+
+＜コード＞
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+/**
+ * 好みの順番を比較するクラス(メインクラス)
+ */
+public class FavoriteOrderComparator {
+	/** 引数の索引(順番ファイル1) */
+	private static final int ARGS_INDEX_FILE1 = 0;
+
+	/** 引数の索引(順番ファイル2) */
+	private static final int ARGS_INDEX_FILE2 = 1;
+
+	/**
+	 * メインメソッド
+	 * @param args 引数の配列
+	 */
+	public static void main(String[] args) {
+		// 引数から各ファイルのパスを取得
+		String filePath1 = null;
+		String filePath2 = null;
+
+		if (args != null) {
+			if (args.length > ARGS_INDEX_FILE1) {
+				filePath1 = args[ARGS_INDEX_FILE1];
+
+				if (args.length > ARGS_INDEX_FILE2) {
+					filePath2 = args[ARGS_INDEX_FILE2];
+				}
+			}
+		}
+
+		// ファイルパスが取得できなかった場合は終了
+		if (filePath1 == null) {
+			System.out.println("エラー[ファイル1未指定]");
+			return;
+		} else if (filePath2 == null) {
+			System.out.println("エラー[ファイル2未指定]");
+			return;
+		}
+
+		// 好みの順番オブジェクトを生成し、基本となる好みの順番データと、比較用の好みデータを取得
+		FavoriteOrder favoriteOrder1 = new FavoriteOrder(filePath1);
+		FavoriteOrder favoriteOrder2 = new FavoriteOrder(filePath2);
+		List<List<String>> favoriteOrderList = favoriteOrder1.createFavoriteOrderList();
+		Map<String, List<String>> favoriteMap = favoriteOrder2.getFavoriteMap();
+		if (favoriteOrderList == null || favoriteMap == null) {
+			return;
+		}
+
+		// 最善の好みの順番データを求める
+		List<String> bestFavoriteOrder = null;
+		List<String> leastCompromiseOrderList = null;
+		for (List<String> favoriteOrder : favoriteOrderList) {
+			List<String> compromiseOrderPairList = new ArrayList<String>();
+			for (Entry<String, List<String>> entry : favoriteMap.entrySet()) {
+				// 基準となる食べ物と、その食べ物の次に好きな食べ物の集合を取得
+				String food1 = entry.getKey();
+				List<String> foodList = entry.getValue();
+				if (food1 == null || foodList == null) {
+					continue;
+				}
+
+				// 両者の食べ物について、現在参照している好みの順番データに設定されている位置を取得して比較し、
+				// 後者の食べ物の位置の方が前である場合(後者の方が好み)は、両者をつなげた文字列を組として集合に追加
+				int index1 = favoriteOrder.indexOf(food1);
+				if (index1 == -1) {
+					continue;
+				}
+				for (String food2 : foodList) {
+					int index2 = favoriteOrder.indexOf(food2);
+					if (index2 == -1) {
+						continue;
+					}
+					if (index2 < index1) {
+						String pair = food1 + food2;
+						compromiseOrderPairList.add(pair);
+					}
+				}
+			}
+
+			// 妥協した順番の組がこれまでよりも少ない場合は、その組データと好みの順番データを格納
+			if (leastCompromiseOrderList == null || compromiseOrderPairList.size() < leastCompromiseOrderList.size()) {
+				leastCompromiseOrderList = compromiseOrderPairList;
+				bestFavoriteOrder = favoriteOrder;
+			}
+		}
+
+		// 処理結果を出力
+		if (bestFavoriteOrder != null) {
+			// 好みの順番
+			StringBuilder builder = new StringBuilder();
+			for (String food : bestFavoriteOrder) {
+				builder.append(food);
+			}
+			System.out.println(builder.toString());
+
+			// 妥協した順番
+			if (leastCompromiseOrderList != null) {
+				builder.setLength(0);
+				for (String pair : leastCompromiseOrderList) {
+					if (builder.length() > 0) {
+						builder.append(",");
+					}
+					builder.append(pair);
+				}
+				System.out.println(builder.toString());
+			}
+		}
+	}
+}
+
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+/**
+ * 好みの順番データ
+ */
+public class FavoriteOrder {
+	/** 文字コード(MS932) */
+	private static final String CHAR_CODE_MS932 = "MS932";
+
+	/** ファイル読み込みエラーの書式 */
+	private static final String FORMAT_FILE_READ_ERROR = "エラー[ファイルの読み込みに失敗[パス:%s]]";
+
+	/** 食べ物情報の各文字列 */
+	private static final String[] FOODS = {"I", "R", "Y", "C", "S", "J", "F", "P", "U", "G", "H", "T"};
+
+	/** 食べ物情報の文字列の桁数 */
+	private static final int FOOD_STRING_LENGTH = FOODS[0].length();
+
+	/** 食べ物情報の組の桁数 */
+	private static final int FOOD_PAIR_LENGTH = FOOD_STRING_LENGTH * 2;
+
+	/** 好みデータ */
+	private Map<String, List<String>> favoriteMap;
+
+	/** 制約データ */
+	private Map<String, List<String>> restrictionMap;
+
+	/**
+	 * 好みデータを返す
+	 * @return 好みデータ(キー:食べ物 値:キーの食べ物の次に好きな食べ物(集合))
+	 */
+	public Map<String, List<String>> getFavoriteMap() {
+		return favoriteMap;
+	}
+
+	/**
+	 * コンストラクタ
+	 * @param filePath ファイルパス
+	 */
+	public FavoriteOrder(String filePath) {
+		if (filePath == null || filePath.isEmpty()) {
+			return;
+		}
+
+		// ファイルの読み込み
+		File file = new File(filePath);
+		List<String> list = readFile(file, CHAR_CODE_MS932);
+		if (list == null || list.isEmpty()) {
+			System.out.println(String.format(FORMAT_FILE_READ_ERROR, file.getAbsolutePath()));
+			return;
+		}
+
+		// 好みデータと制約データを生成
+		favoriteMap = new HashMap<String, List<String>>();
+		restrictionMap = new HashMap<String, List<String>>();
+		for (String favoriteInfo : list) {
+			// 食べ物情報を取得(後者より前者の食べ物の方が好き)
+			String food1 = favoriteInfo.substring(0, FOOD_STRING_LENGTH);
+			String food2 = favoriteInfo.substring(FOOD_STRING_LENGTH, FOOD_PAIR_LENGTH);
+
+			// 食べ物が同じ場合は無効
+			if (food1.equals(food2)) {
+				continue;
+			}
+
+			// 現在の好みの食べ物に続く食べ物データを取得し、データを更新
+			List<String> favoriteFoodList = favoriteMap.get(food1);
+			if (favoriteFoodList == null) {
+				favoriteFoodList = new ArrayList<String>();
+			}
+			if (!favoriteFoodList.contains(food2)) {
+				favoriteFoodList.add(food2);
+				favoriteMap.put(food1, favoriteFoodList);
+			}
+
+			// 後者の食べ物を選ぶために必要な食べ物のデータを取得し、データを更新
+			List<String> necessaryFoodList = restrictionMap.get(food2);
+			if (necessaryFoodList == null) {
+				necessaryFoodList = new ArrayList<String>();
+			}
+			if (!necessaryFoodList.contains(food1)) {
+				necessaryFoodList.add(food1);
+				restrictionMap.put(food2, necessaryFoodList);
+			}
+		}
+	}
+
+	/**
+	 * 自身の持つ好みデータに従って論理的に可能な、好みの順番データの組み合わせを生成する
+	 * @return 好みの順番データの組み合わせ<br />(List&lt;String&gt;:1組の好みの順番データ(好みの順に設定された食べ物の集合))
+	 */
+	public List<List<String>> createFavoriteOrderList() {
+		// 初期化に失敗している場合は処理を中断
+		if (restrictionMap == null) {
+			return null;
+		}
+
+		// 追加条件がない食べ物を初期値として集合に追加
+		List<List<String>> favoriteOrderList = new ArrayList<List<String>>();
+		for (String food : FOODS) {
+			List<String> necessaryFoodList = restrictionMap.get(food);
+			if (necessaryFoodList == null) {
+				List<String> favoriteOrder = new ArrayList<String>();
+				favoriteOrder.add(food);
+				favoriteOrderList.add(favoriteOrder);
+			}
+		}
+		if (favoriteOrderList.isEmpty()) {
+			return null;
+		}
+
+		// 何も追加されなくなるまで追加処理を繰り返す
+		boolean isAdded;
+		do {
+			isAdded = false;
+			Map<List<String>, List<List<String>>> newFavoriteOrderListMap = new LinkedHashMap<List<String>, List<List<String>>>();
+			for (List<String> favoriteOrder : favoriteOrderList) {
+				// 現在参照している好みの順番データに対し、追加可能な食べ物を取得
+				List<String> addableFoodList = getAddableFoodList(favoriteOrder);
+				if (addableFoodList == null || addableFoodList.isEmpty()) {
+					continue;
+				}
+
+				// 食べ物が2つ以上ある場合は、好みの順番データのコピーを生成し、それに追加
+				int foodCount = addableFoodList.size();
+				if (foodCount > 1) {
+					List<List<String>> list = new ArrayList<List<String>>();
+					for (int i = 1; i < foodCount; i++) {
+						List<String> copy = new ArrayList<String>(favoriteOrder);
+						copy.add(addableFoodList.get(i));
+						list.add(copy);
+					}
+					newFavoriteOrderListMap.put(favoriteOrder, list);
+				}
+
+				// 1つ目の食べ物はそのまま追加
+				favoriteOrder.add(addableFoodList.get(0));
+				isAdded = true;
+			}
+
+			// 好みの順番データが生成された場合は、元の順番データの次の位置に追加
+			for (Entry<List<String>, List<List<String>>> entry : newFavoriteOrderListMap.entrySet()) {
+				List<String> original = entry.getKey();
+				List<List<String>> newFavoriteOrderList = entry.getValue();
+				int index = favoriteOrderList.indexOf(original);
+				favoriteOrderList.addAll(index + 1, newFavoriteOrderList);
+			}
+		} while (isAdded);
+
+		return favoriteOrderList;
+	}
+
+	/**
+	 * 指定されたファイルを文字列として読み込み、その内容を返す
+	 * @param file ファイル
+	 * @param characterCode 文字コード
+	 * @return ファイルの内容(行単位)
+	 */
+	private static List<String> readFile(File file, String characterCode) {
+		// 引数の確認
+		if ((file == null || !file.exists() || !file.isFile()) || (characterCode == null || characterCode.isEmpty())) {
+			return null;
+		}
+
+		// ファイルの内容を取得
+		List<String> stringList = new ArrayList<String>();
+
+		try {
+			FileInputStream fis = new FileInputStream(file);
+			InputStreamReader ism = new InputStreamReader(fis, characterCode);
+			BufferedReader br = new BufferedReader(ism);
+			String str;
+			while ((str = br.readLine()) != null) {
+				stringList.add(str.trim());
+			}
+			br.close();
+			ism.close();
+			fis.close();
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+
+		return stringList;
+	}
+
+	/**
+	 * 指定された好みの順番データに追加可能な食べ物を返す
+	 * @param favoriteOrder 好みの順番データ
+	 */
+	private List<String> getAddableFoodList(List<String> favoriteOrder) {
+		if (favoriteOrder == null) {
+			return null;
+		}
+
+		List<String> addableFoodList = new ArrayList<String>();
+		for (String food : FOODS) {
+			// 設定済みの食べ物は対象外
+			boolean isSet = false;
+			for (String setFood : favoriteOrder) {
+				if (setFood.equals(food)) {
+					isSet = true;
+					break;
+				}
+			}
+			if (isSet) {
+				continue;
+			}
+
+			// 追加するために必要な食べ物がない場合は追加
+			List<String> necessaryFoodList = restrictionMap.get(food);
+			if (necessaryFoodList == null) {
+				addableFoodList.add(food);
+				continue;
+			}
+
+			// 必要な食べ物がある場合は、好みの順番データの中に、必要な食べ物が全て設定されている場合に追加
+			boolean isAllSet = true;
+			for (String necessaryFood : necessaryFoodList) {
+				isSet = false;
+				for (String setFood : favoriteOrder) {
+					if (setFood.equals(necessaryFood)) {
+						isSet = true;
+						break;
+					}
+				}
+				if (!isSet) {
+					isAllSet = false;
+					break;
+				}
+			}
+			if (isAllSet) {
+				addableFoodList.add(food);
+			}
+		}
+
+		return addableFoodList;
+	}
+}
